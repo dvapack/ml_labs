@@ -37,7 +37,7 @@ class BinarySVM(BaseEstimator, ClassifierMixin):
         self.support_vector_labels = None
         self.support_vector_alphas = None
 
-    def _kernel_function(self, x1, x2):
+    def _kernel_function(self, x1: np.ndarray, x2: np.ndarray):
         """Метод вызова ядра"""
         if callable(self.kernel):
             return self.kernel(x1, x2, **self.kernel_args)
