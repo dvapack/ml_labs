@@ -64,7 +64,7 @@ class MySVR(BaseEstimator, RegressorMixin):
         self.K = np.zeros((self.n_samples, self.n_samples))
         for i in range(self.n_samples):
             for j in range(self.n_samples):
-                self.K[i, j] = self._kernel_function(self.X[i], self.X[j])
+                self.K[i, j] = self._kernel_function(X[i], X[j])
 
         self.alpha = np.zeros(self.n_samples)
         self.alpha_star = np.zeros(self.n_samples)
@@ -75,7 +75,7 @@ class MySVR(BaseEstimator, RegressorMixin):
             num_changed = 0
             for i in range(self.n_samples):
                 f_i = np.sum((self.alpha - self.alpha_star) * self.K[:, i]) + self.b
-                E_i = f_i - self.y[i]
+                E_i = f_i - y[i]
 
                 # alpha_i: если E_i > epsilon, то alpha_i < C
                 # alpha_i*: если E_i < -epsilon, то alpha_i* < C
@@ -88,7 +88,7 @@ class MySVR(BaseEstimator, RegressorMixin):
                         j = np.random.randint(0, self.n_samples)
 
                     f_j = np.sum((self.alpha - self.alpha_star) * self.K[:, j]) + self.b
-                    E_j = f_j - self.y[j]
+                    E_j = f_j - y[j]
 
                     alpha_i_old = self.alpha[i]
                     alpha_i_star_old = self.alpha_star[i]
@@ -96,7 +96,7 @@ class MySVR(BaseEstimator, RegressorMixin):
                     alpha_j_star_old = self.alpha_star[j]
 
                     # L H
-                    if self.y[i] == self.y[j]:
+                    if y[i] == y[j]:
                         L = max(0, alpha_i_old + alpha_j_old - self.C)
                         H = min(self.C, alpha_i_old + alpha_j_old)
                     else:
