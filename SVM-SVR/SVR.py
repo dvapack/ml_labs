@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from kernels import linear_kernel
-from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
 
 class MySVR(BaseEstimator, RegressorMixin):
     """
@@ -162,7 +162,7 @@ class MySVR(BaseEstimator, RegressorMixin):
                 break
 
         sv_mask = (self.alpha > 1e-5) | (self.alpha_star > 1e-5)
-        self.support_vectors = self.X[sv_mask]
+        self.support_vectors = X[sv_mask]
         self.support_vector_alphas = self.alpha[sv_mask]
         self.support_vector_alpha_stars = self.alpha_star[sv_mask]
 
@@ -201,7 +201,7 @@ class MySVR(BaseEstimator, RegressorMixin):
             score (float):
             (Sklearn) The R^2 score or ndarray of scores if 'multioutput' is 'raw_values'.
         """
-        return r2_score(y, self.predict(X))
+        return mean_squared_error(y, self.predict(X))
 
     def get_params(self, deep=True):
         """
