@@ -6,7 +6,7 @@ from kernels import linear_kernel
 
 class BinarySVM(BaseEstimator, ClassifierMixin):
     """
-    Класс бинарного классификатора с помощью Supported Vector Machine.
+    Класс бинарного классификатора с помощью Support Vector Machine.
 
     Для решения двойственной задачи используется Simplified SMO.
 

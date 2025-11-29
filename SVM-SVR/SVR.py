@@ -6,7 +6,7 @@ from sklearn.metrics import r2_score
 
 class MySVR(BaseEstimator, RegressorMixin):
     """
-    Класс регрессора с помощью Supported Vector Machine.
+    Класс регрессора с помощью Support Vector Machine.
 
     Для решения двойственной задачи используется модифицированный Simplified SMO.
 

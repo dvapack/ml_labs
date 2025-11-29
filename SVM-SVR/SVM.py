@@ -8,7 +8,7 @@ from BinarySVM import BinarySVM
 
 class SVM(BaseEstimator, ClassifierMixin):
     """
-    Класс классификатора с помощью Supported Vector Machine.
+    Класс классификатора с помощью Support Vector Machine.
 
     Для решения двойственной задачи используется Simplified SMO.
 
