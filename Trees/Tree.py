@@ -1,6 +1,6 @@
 import numpy as np
 
-class Node():
+class Node:
     def __init__(self, is_leaf, value, feature, threshold, left: None, right: None):
         self.is_leaf = is_leaf
         self.value = value
@@ -20,7 +20,7 @@ class Node():
             
 
 
-class Tree():
+class Tree:
     def __init__(self, max_depth, min_samples_leaf, min_gain_to_split):
         self.root = None
         self.max_depth = max_depth
@@ -95,6 +95,6 @@ class Tree():
         predictions = []
         for i in range(X.shape[0]):
             predictions.append(self.root.predict(X[i]))
-        return predictions
+        return np.array(predictions, dtype=float)
         
     
