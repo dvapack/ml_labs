@@ -4,7 +4,7 @@ class Loss:
     def base_predictions(self, y):
         pass
 
-    def gradients(self, F_i, y_i):
+    def gradients(self, F_i, y_i) -> float:
         pass
 
     def hessians(self, F_i, y_i):
@@ -14,8 +14,8 @@ class MSELoss(Loss):
     def base_predictions(self, y):
         return np.mean(y)
 
-    def gradients(self, F_i, y_i):
-        return y_i - F_i
+    def gradients(self, F_i, y_i) -> float:
+        return F_i - y_i
     
     def hessians(self, F_i, y_i):
         return np.ones_like(F_i)
@@ -25,7 +25,7 @@ class MAELoss(Loss):
         return np.mean(y)
 
     def gradients(self, F_i, y_i):
-        return y_i - F_i
+        return F_i - y_i
     
     def hessians(self, F_i, y_i):
         return np.ones_like(F_i)
