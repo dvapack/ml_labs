@@ -27,10 +27,11 @@ class MyXGBoost:
             g = np.zeros(n, dtype=float)
             h = np.zeros(n, dtype=float)
             for i in subset_idx:
-                g[i] = -self.loss.gradients(F[i], y[i])
+                g[i] = self.loss.gradients(F[i], y[i])
                 h[i] = self.loss.hessians(F[i], y[i])
 
             tree = XGBoostTree(
+                missing_value = self.tree_params["missing_value"],
                 gamma = self.tree_params["gamma"],
                 reg_lambda = self.tree_params["reg_lambda"],
                 reg_alpha = self.tree_params["reg_alpha"],

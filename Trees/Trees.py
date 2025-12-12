@@ -17,6 +17,32 @@ class Node:
                 return self.left.predict(X)
             else:
                 return self.right.predict(X)
+
+class XGBoostNode:
+    def __init__(self, is_leaf, value, feature, threshold, missing_value, default_left, left: None, right: None):
+        self.is_leaf = is_leaf
+        self.value = value
+        self.feature = feature
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.missing_value = missing_value
+        self.default_left = default_left
+
+    def predict(self, X):
+        if self.is_leaf:
+            return self.value
+        else:
+            if X[self.feature] == self.missing_value:
+                if self.default_left:
+                    return self.left.predict(X)
+                else:
+                    return self.right.predict(X)
+            else:
+                if X[self.feature] <= self.threshold:
+                    return self.left.predict(X)
+                else:
+                    return self.right.predict(X)
             
 
 
@@ -98,11 +124,12 @@ class Tree:
         
 
 class XGBoostTree:
-    def __init__(self, reg_lambda, reg_alpha, gamma, max_depth, min_child_weight, min_gain_to_split):
+    def __init__(self, reg_lambda, reg_alpha, gamma, missing_value, max_depth, min_child_weight, min_gain_to_split):
         self.root = None
         self.reg_lambda = reg_lambda
         self.reg_alpha = reg_alpha
         self.gamma = gamma
+        self.missing_value = missing_value
         self.max_depth = max_depth
         self.min_child_weight = min_child_weight
         self.min_gain_to_split = min_gain_to_split
@@ -115,69 +142,118 @@ class XGBoostTree:
         else:
             return 0
 
-    def _build_node(self, X, g, h, S, depth, n_features):
+    def _build_node(self, X, g, h, S, depth, n_features, missing_value):
         G = np.sum(g[S])
         H = np.sum(h[S])
         n_S = len(S)
 
         if depth >= self.max_depth:
             w = self._compute_weight(G, H)
-            return Node(is_leaf=True, value=w, feature=None, 
-                        threshold=None, left=None, right=None)
+            return XGBoostNode(is_leaf=True, value=w, feature=None, 
+                        threshold=None, left=None, right=None, missing_value=None, default_left=None)
 
         best_gain = - np.inf
         best_feature = None
         best_threshold = None
+        best_default_left = None
         best_L = None
         best_R = None
         for j in range(n_features):
-            pairs = [(X[i][j], g[i], h[i], i) for i in S]
-            pairs.sort()
-
+            known = []
+            missing = []
+            for i in S:
+                if X[i][j] == missing_value:
+                    missing.append((g[i], h[i], i))
+                else:
+                    known.append((X[i][j], g[i], h[i], i))
+            known.sort()
+            # pairs = [(X[i][j], g[i], h[i], i) for i in S]
+            # pairs.sort()
+            G_known = sum(item[1] for item in known)
+            H_known = sum(item[2] for item in known)
             G_L = 0
             H_L = 0
-            G_R = G
-            H_R = H
-
-            for k in range(n_S - 1):
-                (_, g_val, h_val, idx) = pairs[k]
+            G_R = G_known
+            H_R = H_known
+            n_known = len(known)
+            for k in range(n_known - 1):
+                (x_val, g_val, h_val, idx) = known[k]
                 G_L += g_val
                 H_L += h_val
                 G_R -= g_val
                 H_R -= h_val
 
-                if H_L < self.min_child_weight or H_R < self.min_child_weight:
-                    continue
+                G_miss = sum(item[0] for item in missing)
+                H_miss = sum(item[1] for item in missing)
 
-                gain = 0.5 * (
-                    G_L * G_L / (H_L + self.reg_lambda) +
-                    G_R * G_R / (H_R + self.reg_lambda) -
-                    G * G / (H + self.reg_lambda)
-                ) - self.gamma
+                G_L1 = G_L + G_miss
+                H_L1 = H_L + H_miss
+                G_R1 = G_R
+                H_R1 = H_R
 
-                if gain > best_gain:
-                    best_gain = gain
+                if H_L1 >= self.min_child_weight and H_R1 >= self.min_child_weight:
+                    gain1 = 0.5 * (
+                        G_L1 * G_L1 / (H_L1 + self.reg_lambda) +
+                        G_R1 * G_R1 / (H_R1 + self.reg_lambda) -
+                        G * G / (H + self.reg_lambda)
+                    ) - self.gamma
+                else:
+                    gain1 = - np.inf
+                
+                G_L2 = G_L
+                H_L2 = H_L
+                G_R2 = G_R + G_miss
+                H_R2 = H_R + H_miss
+
+                if H_L2 >= self.min_child_weight and H_R2 >= self.min_child_weight:
+                    gain2 = 0.5 * (
+                        G_L2 * G_L2 / (H_L2 + self.reg_lambda) +
+                        G_R2 * G_R2 / (H_R2 + self.reg_lambda) -
+                        G * G / (H + self.reg_lambda)
+                    ) - self.gamma
+                else:
+                    gain2 = - np.inf
+
+                if gain1 > gain2:
+                    current_gain = gain1
+                    default_left = True
+                else:
+                    current_gain = gain2
+                    default_left = False
+
+                if current_gain > best_gain:
+                    best_gain = current_gain
                     best_feature = j
-                    next_val = pairs[k+1][0]
-                    best_threshold = (pairs[k][0] + next_val) / 2
+                    next_val = known[k+1][0]
+                    best_threshold = (known[k][0] + next_val) / 2
+                    best_default_left = default_left
+
+                    known_L = [i[3] for i in known[0:k+1]]
+                    known_R = [i[3] for i in known[k+1:]]
                     
-                    best_L = [i[3] for i in pairs[0:k+1]]
-                    best_R = [i[3] for i in pairs[k+1:]]
+                    if default_left:
+                        best_L = known_L + [i[2] for i in missing]
+                        best_R = known_R
+                    else:
+                        best_L = known_L
+                        best_R = known_R + [i[2] for i in missing]                       
 
         if best_gain < self.min_gain_to_split:
             w = self._compute_weight(G, H)
-            return Node(is_leaf=True, value=w, feature=None, 
-                        threshold=None, left=None, right=None)
+            return XGBoostNode(is_leaf=True, value=w, feature=None, 
+                        threshold=None, left=None, right=None, missing_value=None, default_left=None)
         
 
-        left_child = self._build_node(X, g, h, best_L, depth+1, n_features)
-        right_child = self._build_node(X, g, h, best_R, depth+1, n_features)
+        left_child = self._build_node(X, g, h, best_L, depth+1, n_features, missing_value)
+        right_child = self._build_node(X, g, h, best_R, depth+1, n_features, missing_value)
 
-        return Node(
+        return XGBoostNode(
             value=None,
             is_leaf=False,
             feature=best_feature,
             threshold=best_threshold,
+            missing_value=missing_value,
+            default_left=best_default_left,
             left=left_child,
             right=right_child
         )
@@ -186,7 +262,7 @@ class XGBoostTree:
         n = X.shape[0]
         d = X.shape[1]
         root_idx = np.arange(0, n)
-        self.root = self._build_node(X, g, h, root_idx, depth=0, n_features=d)
+        self.root = self._build_node(X, g, h, root_idx, depth=0, n_features=d, missing_value=self.missing_value)
 
     def predict(self, X):
         predictions = []
