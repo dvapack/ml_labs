@@ -1,8 +1,8 @@
 import numpy as np
 from Losses import Loss
-from Trees.Trees import Tree
+from Trees.Trees import XGBoostTree
 
-class MyGradientBoosting:
+class MyXGBoost:
     def __init__(self, loss: Loss, learning_rate, n_estimators, subsampling, **tree_params):
         self.loss = loss
         self.learning_rate = learning_rate
@@ -24,16 +24,21 @@ class MyGradientBoosting:
 
         for t in range(self.n_estimators):
             subset_idx = self._random_subset(n)
-            residuals = np.zeros(n, dtype=float)
+            g = np.zeros(n, dtype=float)
+            h = np.zeros(n, dtype=float)
             for i in subset_idx:
-                residuals[i] = -self.loss.gradients(F[i], y[i])
+                g[i] = -self.loss.gradients(F[i], y[i])
+                h[i] = self.loss.hessians(F[i], y[i])
 
-            tree = Tree(
+            tree = XGBoostTree(
+                gamma = self.tree_params["gamma"],
+                reg_lambda = self.tree_params["reg_lambda"],
+                reg_alpha = self.tree_params["reg_alpha"],
                 max_depth = self.tree_params["max_depth"],
-                min_samples_leaf = self.tree_params["min_samples_leaf"],
+                min_child_weight = self.tree_params["min_child_weight"],
                 min_gain_to_split = self.tree_params["min_gain_to_split"]
             )
-            tree.fit(X[subset_idx], residuals[subset_idx])
+            tree.fit(X[subset_idx], g[subset_idx], h[subset_idx])
 
             tree_preds = tree.predict(X)
             F = F + self.learning_rate * tree_preds
@@ -48,4 +53,3 @@ class MyGradientBoosting:
             predictions = predictions + self.learning_rate * tree_predict
         
         return predictions
-

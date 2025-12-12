@@ -7,7 +7,7 @@ class Loss:
     def gradients(self, F_i, y_i) -> float:
         pass
 
-    def hessians(self, F_i, y_i):
+    def hessians(self, F_i, y_i) -> float:
         pass
 
 class MSELoss(Loss):
