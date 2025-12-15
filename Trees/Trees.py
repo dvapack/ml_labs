@@ -32,17 +32,16 @@ class XGBoostNode:
     def predict(self, X):
         if self.is_leaf:
             return self.value
+        val = X[self.feature]
+        is_missing = (
+            (self.missing_value is np.nan and np.isnan(val)) or
+            (val == self.missing_value)
+        )
+        if is_missing:
+            child = self.left if self.default_left else self.right
         else:
-            if X[self.feature] == self.missing_value:
-                if self.default_left:
-                    return self.left.predict(X)
-                else:
-                    return self.right.predict(X)
-            else:
-                if X[self.feature] <= self.threshold:
-                    return self.left.predict(X)
-                else:
-                    return self.right.predict(X)
+            child = self.left if val < self.threshold else self.right
+        return child.predict(X)
             
 
 
@@ -124,7 +123,7 @@ class Tree:
         
 
 class XGBoostTree:
-    def __init__(self, reg_lambda, reg_alpha, gamma, missing_value, max_depth, min_child_weight, min_gain_to_split):
+    def __init__(self, reg_lambda, reg_alpha, gamma, missing_value, max_depth, min_child_weight):
         self.root = None
         self.reg_lambda = reg_lambda
         self.reg_alpha = reg_alpha
@@ -132,9 +131,10 @@ class XGBoostTree:
         self.missing_value = missing_value
         self.max_depth = max_depth
         self.min_child_weight = min_child_weight
-        self.min_gain_to_split = min_gain_to_split
 
     def _compute_weight(self, G, H):
+        if H + self.reg_lambda == 0:
+            return 0.0
         if G > self.reg_alpha:
             return - (G - self.reg_alpha) / (H + self.reg_lambda)
         elif G < -self.reg_alpha:
@@ -162,11 +162,11 @@ class XGBoostTree:
             known = []
             missing = []
             for i in S:
-                if X[i][j] == missing_value:
+                if X[i][j] == missing_value or np.isnan(X[i][j]):
                     missing.append((g[i], h[i], i))
                 else:
                     known.append((X[i][j], g[i], h[i], i))
-            known.sort()
+            known.sort(key=lambda x: x[0])
             # pairs = [(X[i][j], g[i], h[i], i) for i in S]
             # pairs.sort()
             G_known = sum(item[1] for item in known)
@@ -182,6 +182,9 @@ class XGBoostTree:
                 H_L += h_val
                 G_R -= g_val
                 H_R -= h_val
+
+                if x_val == known[k + 1][0]:
+                    continue
 
                 G_miss = sum(item[0] for item in missing)
                 H_miss = sum(item[1] for item in missing)
@@ -238,7 +241,7 @@ class XGBoostTree:
                         best_L = known_L
                         best_R = known_R + [i[2] for i in missing]                       
 
-        if best_gain < self.min_gain_to_split:
+        if best_gain <= 0 or best_feature is None:
             w = self._compute_weight(G, H)
             return XGBoostNode(is_leaf=True, value=w, feature=None, 
                         threshold=None, left=None, right=None, missing_value=None, default_left=None)

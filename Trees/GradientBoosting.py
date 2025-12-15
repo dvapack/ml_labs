@@ -1,6 +1,6 @@
 import numpy as np
 from Losses import Loss
-from Trees.Trees import Tree
+from Trees import Tree
 
 class MyGradientBoosting:
     def __init__(self, loss: Loss, learning_rate, n_estimators, subsampling, **tree_params):

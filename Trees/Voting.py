@@ -3,7 +3,7 @@ import numpy as np
 class Voting:
     def __init__(self, models, weights, mode):
         self.models = models
-        self.weights = np.asarray(weights)
+        self.weights = weights
         self.mode = mode
 
     def fit(self, X, y):
@@ -16,6 +16,8 @@ class Voting:
         n_models = len(self.models)
         if self.weights is None:
             self.weights = np.ones(n_models)
+        else:
+            self.weights = np.asarray(self.weights)
         if self.mode == "hard":
             hard_predictions = np.zeros((n, n_models))
             for i, model in enumerate(self.models):

@@ -1,6 +1,6 @@
 import numpy as np
 from Losses import Loss
-from Trees.Trees import XGBoostTree
+from Trees import XGBoostTree
 
 class MyXGBoost:
     def __init__(self, loss: Loss, learning_rate, n_estimators, subsampling, **tree_params):
@@ -37,7 +37,6 @@ class MyXGBoost:
                 reg_alpha = self.tree_params["reg_alpha"],
                 max_depth = self.tree_params["max_depth"],
                 min_child_weight = self.tree_params["min_child_weight"],
-                min_gain_to_split = self.tree_params["min_gain_to_split"]
             )
             tree.fit(X[subset_idx], g[subset_idx], h[subset_idx])
 
