@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from sklearn.base import clone, BaseEstimator, ClassifierMixin
+from sklearn.metrics import accuracy_score
 
 class Stacking(BaseEstimator, ClassifierMixin):
     def __init__(self, models, n_folds, meta_model):
@@ -61,3 +62,7 @@ class Stacking(BaseEstimator, ClassifierMixin):
             models_predictions[:, i * self.c:(i + 1) * self.c] = model.predict_proba(X)
         prediction = self.meta_model.predict(models_predictions)
         return prediction
+
+    def score(self, X, y, sample_weight=None):
+        y_pred = self.predict(X)
+        return accuracy_score(y, y_pred, sample_weight=sample_weight)

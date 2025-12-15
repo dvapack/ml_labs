@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics import accuracy_score
 
 class Voting(BaseEstimator, ClassifierMixin):
     def __init__(self, models, weights, mode):
@@ -56,3 +57,7 @@ class Voting(BaseEstimator, ClassifierMixin):
         weighted = soft_predictions * weights[None, :, None]
         V = weighted.sum(axis=1)
         return V / V.sum(axis=1, keepdims=True)
+    
+    def score(self, X, y, sample_weight=None):
+        y_pred = self.predict(X)
+        return accuracy_score(y, y_pred, sample_weight=sample_weight)
