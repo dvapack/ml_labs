@@ -1,8 +1,8 @@
 import numpy as np
 import random
-from sklearn.base import clone
+from sklearn.base import clone, BaseEstimator, ClassifierMixin
 
-class Stacking:
+class Stacking(BaseEstimator, ClassifierMixin):
     def __init__(self, models, n_folds, meta_model):
         self.models = models
         self.n_folds = n_folds
@@ -50,6 +50,7 @@ class Stacking:
             model.fit(X, y)
         
         self.meta_model.fit(predictions, y)
+        return self
 
 
     def predict(self, X):

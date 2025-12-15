@@ -2,13 +2,13 @@ import numpy as np
 
 class Loss:        
     def base_predictions(self, y):
-        pass
+        raise NotImplementedError
 
-    def gradients(self, F_i, y_i) -> float:
-        pass
+    def gradients(self, F_i, y_i):
+        raise NotImplementedError
 
-    def hessians(self, F_i, y_i) -> float:
-        pass
+    def hessians(self, F_i, y_i):
+        raise NotImplementedError
 
 class MSELoss(Loss):
     def base_predictions(self, y):
